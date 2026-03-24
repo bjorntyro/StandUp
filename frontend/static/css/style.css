@@ -102,13 +102,14 @@ body::after {
 
 }
 
-.buttons {
-    margin-top: 40px;
-}
-
 /* main jojo button */
 
 .btn {
+    display: inline-block;
+
+    text-decoration: none;
+
+    font-family: 'Poppins', sans-serif;
 
     padding: 14px 34px;
     margin: 10px;
