@@ -171,3 +171,129 @@ body::after {
         0 0 40px rgba(120, 180, 255, 0.6);
 
 }
+
+/* ===== MODAL OVERLAY ===== */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.6);
+
+    backdrop-filter: blur(10px);
+
+    z-index: 9999;
+}
+
+.hidden {
+    display: none;
+}
+
+/* ===== MODAL BOX ===== */
+
+.modal-content {
+    width: 100%;
+    max-width: 420px;
+
+    padding: 28px 28px 24px;
+
+    color: white;
+    text-align: left;
+
+    border-radius: 20px;
+
+    background: linear-gradient(
+        135deg,
+        rgba(124, 58, 237, 0.35),
+        rgba(14, 165, 233, 0.28),
+        rgba(16, 185, 129, 0.22)
+    );
+
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+
+    border: 1px solid rgba(255, 255, 255, 0.18);
+
+    box-shadow:
+        0 0 20px rgba(180, 50, 255, 0.35),
+        0 0 40px rgba(80, 200, 255, 0.20);
+}
+
+.modal-content h2 {
+    margin: 0 0 18px 0;
+
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+}
+
+/* ===== FORM LAYOUT ===== */
+
+.create-party-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== INPUT ===== */
+
+.input-field {
+    width: 100%;
+    box-sizing: border-box;
+
+    padding: 12px 14px;
+
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+
+    outline: none;
+
+    font-size: 15px;
+    color: white;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.input-field::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.input-field:focus {
+    border-color: rgba(168, 85, 247, 0.9);
+
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ===== BUTTONS ===== */
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    margin-top: 6px;
+}

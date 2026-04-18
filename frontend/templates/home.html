@@ -1,12 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-    <section class="hero">
-        <div class="hero-box">
-            <h1>StandUp my n words!</h1>
-            <div class="buttons">
-                <a href="/create_party" class="btn">Create Party</a>
-                <a class="btn secondary">Join Party</a>
+<section class="hero">
+    <div class="hero-box">
+        <div id="createModal" class="modal hidden">
+            <div class="modal-content">
+                <form class="create-party-form">
+                    <div class="form-group">
+                        <label for="party-name">Party Name</label>
+                        <input id="party-name" type="text" placeholder="Enter party name" class="input-field">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="display-name">Display Name</label>
+                        <input id="display-name" type="text" placeholder="Enter your display name" class="input-field">
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn">Create</button>
+                        <button type="button" class="btn secondary" onclick="closeCreateModal()">Cancel</button>
+                    </div>
+                </form>
+
             </div>
         </div>
-    </section>
+        <h1>StandUp my n words!</h1>
+        <div class="buttons">
+            <button class="btn" onclick="openCreateModal()">Create Party</button>
+            <a class="btn secondary">Join Party</a>
+        </div>
+    </div>
+</section>
 {% endblock %}
