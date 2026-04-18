@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="create-party-page">
+
+    <!-- Party name (center top) -->
+    <h1 id="party-title" class="party-title">
+        Create your party
+    </h1>
+
+    <div class="form-container">
+        <form action="/create_party" method="post" class="create-form">
+
+            <!-- Party Name -->
+            <div class="form-group">
+                <label for="party_name">Party Name</label>
+                <input
+                    type="text"
+                    id="party_name"
+                    name="party_name"
+                    placeholder="Enter party name"
+                    required
+                >
+            </div>
+
+            <!-- Username -->
+            <div class="form-group">
+                <label for="username">Your Name</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter your name"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn">Create Party</button>
+
+        </form>
+    </div>
+
+</section>
+{% endblock %}
