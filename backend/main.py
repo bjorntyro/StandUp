@@ -18,9 +18,18 @@ def home(request: Request):
     return templates.TemplateResponse("home.html", {"request": request})
 
 
-@app.get("/create_party", response_class=HTMLResponse)
-async def create_party_page(request: Request):
-    return templates.TemplateResponse("create_party.html", {"request": request})
+@app.get("/create_party")
+async def create_party_page(
+    request: Request,
+    party_name: str = None
+):
+    return templates.TemplateResponse(
+        "create_party.html",
+        {
+            "request": request,
+            "party_name": party_name
+        }
+    )
 
 @app.post("/create_party")
 async def create_party(
