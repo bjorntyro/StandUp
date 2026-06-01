@@ -265,14 +265,14 @@ function onGameStarted(msg) {
     document.getElementById("nameTarget").textContent = msg.assigned_to;
     showSection("name");
     startTimer(msg.duration, "N", () => {
-        if (!hasSubmittedName) submitName();
+        if (!hasSubmittedName) submitName(true);
     });
 }
 
-function submitName() {
+function submitName(force = false) {
     if (hasSubmittedName) return;
     const val = document.getElementById("standNameInput").value.trim();
-    if (!val) {
+    if (!val && !force) {
         document.getElementById("nameStatus").textContent = "Enter a stand name!";
         return;
     }

@@ -50,14 +50,14 @@ async def broadcast(code: str, msg: dict):
 
 
 async def timer_name(code: str):
-    await asyncio.sleep(30)
+    await asyncio.sleep(33)  # 3 s grace after 30 s frontend countdown
     room = rooms.get(code)
     if room and room["phase"] == "name":
         await _start_draw(code)
 
 
 async def timer_draw(code: str):
-    await asyncio.sleep(120)
+    await asyncio.sleep(123)  # 3 s grace after 120 s frontend countdown
     room = rooms.get(code)
     if room and room["phase"] == "draw":
         await _start_reveal(code)
