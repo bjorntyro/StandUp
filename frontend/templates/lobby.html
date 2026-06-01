@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- ── LOBBY ──────────────────────────────────────────────── -->
+<div id="section-lobby" class="lobby-wrap">
+    <div class="lobby-header">
+        <h1 id="partyNameHeader">LOADING...</h1>
+        <div>
+            <div class="room-code-badge" onclick="copyCode()" title="Click to copy">
+                <span id="codeDisplay">{{ room_code }}</span>
+                <span class="copy-hint">▸ COPY</span>
+            </div>
+        </div>
+    </div>
+    <div class="lobby-content">
+        <div class="phase-label">WAITING FOR STAND USERS</div>
+        <div class="player-list-title">STAND USERS IN THE ROOM</div>
+        <div class="player-list" id="playerList"></div>
+        <div class="waiting-text" id="waitingText">Waiting for players...</div>
+        <div style="margin-top:32px;" id="startBtnWrap" class="hidden">
+            <button class="btn btn-primary btn-lg" onclick="startGame()">START GAME</button>
+            <div style="margin-top:10px; text-align:center; font-size:12px; color:var(--muted); letter-spacing:2px;">
+                MIN 2 PLAYERS REQUIRED
+            </div>
+        </div>
+    </div>
+    <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+    </div>
+</div>
+
+<!-- ── NAME PHASE ─────────────────────────────────────────── -->
+<div id="section-name" class="game-section hidden">
+    <div class="phase-label">PHASE 1 — NAME YOUR STAND</div>
+    <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 100 100">
+            <circle class="timer-track" cx="50" cy="50" r="45"/>
+            <circle class="timer-progress" id="timerCircleN" cx="50" cy="50" r="45"/>
+            <text class="timer-num" x="50" y="53" id="timerTextN" text-anchor="middle" dominant-baseline="central">30</text>
+        </svg>
+    </div>
+    <div class="assignment-reveal">
+        <div class="intro">INVENT A STAND FOR...</div>
+        <div class="target-name" id="nameTarget">???</div>
+        <div class="sub">Give them the perfect Stand name</div>
+    </div>
+    <div class="name-form">
+        <input id="standNameInput" class="stand-name-input" type="text"
+               placeholder="STAR PLATINUM..." maxlength="30" autocomplete="off">
+        <button class="btn btn-primary btn-lg" id="submitNameBtn" onclick="submitName()">SUBMIT STAND NAME</button>
+        <div id="nameStatus" class="error-msg" style="color:var(--cyan);"></div>
+    </div>
+</div>
+
+<!-- ── DRAW PHASE ─────────────────────────────────────────── -->
+<div id="section-draw" class="game-section hidden" style="padding-bottom:80px;">
+    <div class="phase-label">PHASE 2 — DRAW THE STAND</div>
+    <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 100 100">
+            <circle class="timer-track" cx="50" cy="50" r="45"/>
+            <circle class="timer-progress" id="timerCircleD" cx="50" cy="50" r="45"/>
+            <text class="timer-num" x="50" y="53" id="timerTextD" text-anchor="middle" dominant-baseline="central">120</text>
+        </svg>
+    </div>
+    <div class="draw-layout">
+        <div class="draw-info panel" style="padding:20px; margin-bottom:12px;">
+            <div class="draw-for-label">DRAWING STAND FOR</div>
+            <div class="target-name" id="drawTarget" style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--gold);letter-spacing:3px;"></div>
+            <div style="margin-top:8px;"></div>
+            <div class="draw-for-label">STAND NAME</div>
+            <div class="stand-name-badge" id="drawStandName">???</div>
+        </div>
+        <div class="canvas-wrap">
+            <div class="tool-bar">
+                <div class="color-grid" id="colorGrid"></div>
+                <div class="size-btns" id="sizeBtns">
+                    <button class="size-btn active" data-size="3" style="width:28px;height:28px;" onclick="selectSize(3,this)">
+                        <span class="size-dot" style="width:4px;height:4px;"></span>
+                    </button>
+                    <button class="size-btn" data-size="9" style="width:34px;height:34px;" onclick="selectSize(9,this)">
+                        <span class="size-dot" style="width:9px;height:9px;"></span>
+                    </button>
+                    <button class="size-btn" data-size="20" style="width:40px;height:40px;" onclick="selectSize(20,this)">
+                        <span class="size-dot" style="width:16px;height:16px;"></span>
+                    </button>
+                </div>
+                <button class="tool-btn active" id="btnBrush" onclick="selectTool('brush')">✏ BRUSH</button>
+                <button class="tool-btn" id="btnEraser" onclick="selectTool('eraser')">◻ ERASER</button>
+                <button class="tool-btn" onclick="undoCanvas()">↩ UNDO</button>
+                <button class="tool-btn btn-danger" onclick="clearCanvas()">✕ CLEAR</button>
+            </div>
+            <canvas id="drawCanvas" class="canvas-panel" width="500" height="330"
+                    style="max-width:100%; touch-action:none;"></canvas>
+            <button class="btn btn-primary" id="submitDrawBtn" onclick="submitDrawing()">SUBMIT DRAWING</button>
+            <div id="drawStatus" class="error-msg" style="color:var(--cyan);"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ── REVEAL PHASE ───────────────────────────────────────── -->
+<div id="section-reveal" class="reveal-section hidden">
+    <div class="reveal-counter" id="revealCounter">STAND 1 OF 1</div>
+    <div class="reveal-of-text" id="revealOfText">THE STAND OF...</div>
+    <div class="reveal-target-name" id="revealTargetName"></div>
+    <div class="reveal-card" id="revealCard">
+        <img id="revealDrawing" src="" alt="stand drawing">
+        <div class="reveal-stand-name" id="revealStandName"></div>
+        <div class="reveal-by" id="revealBy"></div>
+    </div>
+</div>
+
+<!-- ── VOTE PHASE ─────────────────────────────────────────── -->
+<div id="section-vote" class="game-section hidden">
+    <div class="vote-title">VOTE FOR THE BEST STAND!</div>
+    <div class="vote-subtitle">YOU CANNOT VOTE FOR YOUR OWN STAND</div>
+    <div class="stands-grid" id="standsGrid"></div>
+    <div class="vote-progress" id="voteProgress"></div>
+</div>
+
+<!-- ── RESULTS PHASE ──────────────────────────────────────── -->
+<div id="section-results" class="game-section hidden">
+    <div class="results-title">FINAL RESULTS</div>
+    <div class="results-list" id="resultsList"></div>
+    <div style="margin-top:36px;">
+        <button class="btn btn-primary btn-lg" onclick="window.location.href='/'">PLAY AGAIN</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+const ROOM_CODE = "{{ room_code }}";
+let myUsername = sessionStorage.getItem("username");
+let isHost = false;
+let myAssignment = null;
+let ws = null;
+let timerInterval = null;
+let hasVoted = false;
+let hasSubmittedName = false;
+let hasSubmittedDraw = false;
+
+// Canvas
+let ctx = null;
+let drawing = false;
+let currentColor = "#000000";
+let currentSize = 3;
+let currentTool = "brush";
+let undoStack = [];
+const MAX_UNDO = 20;
+let lastDrawX = 0, lastDrawY = 0;
+
+// ── INIT ───────────────────────────────────────────────────────
+if (!myUsername) { window.location.href = "/"; }
+
+function showSection(id) {
+    ["lobby","name","draw","reveal","vote","results"].forEach(s => {
+        const el = document.getElementById("section-" + s);
+        if (el) el.classList.add("hidden");
+    });
+    const target = document.getElementById("section-" + id);
+    if (target) target.classList.remove("hidden");
+}
+
+// ── WEBSOCKET ──────────────────────────────────────────────────
+function connect() {
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    ws = new WebSocket(`${proto}://${location.host}/ws/${ROOM_CODE}/${encodeURIComponent(myUsername)}`);
+
+    ws.onopen = () => {
+        setStatus(true, "Connected as " + myUsername);
+    };
+    ws.onclose = () => {
+        setStatus(false, "Disconnected — refresh to reconnect");
+    };
+    ws.onerror = () => {
+        setStatus(false, "Connection error");
+    };
+    ws.onmessage = e => {
+        try { handleMessage(JSON.parse(e.data)); } catch(err) { console.error(err); }
+    };
+}
+
+function send(msg) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+}
+
+function setStatus(ok, text) {
+    const dot = document.getElementById("statusDot");
+    const txt = document.getElementById("statusText");
+    if (dot) dot.className = "status-dot" + (ok ? "" : " disconnected");
+    if (txt) txt.textContent = text;
+}
+
+// ── MESSAGE HANDLER ────────────────────────────────────────────
+function handleMessage(msg) {
+    switch (msg.type) {
+        case "room_joined":   onRoomJoined(msg);  break;
+        case "player_update": onPlayerUpdate(msg); break;
+        case "error":         alert("⚠ " + msg.message); break;
+        case "game_started":  onGameStarted(msg); break;
+        case "phase_change":  onPhaseChange(msg); break;
+        case "reveal_stand":  onRevealStand(msg); break;
+        case "vote_update":   onVoteUpdate(msg);  break;
+        case "results":       onResults(msg);     break;
+    }
+}
+
+// ── LOBBY ──────────────────────────────────────────────────────
+function onRoomJoined(msg) {
+    isHost = msg.is_host;
+    document.getElementById("partyNameHeader").textContent = msg.party_name;
+    document.getElementById("codeDisplay").textContent = msg.room_code;
+    renderPlayers(msg.players, msg.room_code);
+    if (isHost) document.getElementById("startBtnWrap").classList.remove("hidden");
+    showSection("lobby");
+}
+
+function onPlayerUpdate(msg) {
+    renderPlayers(msg.players, msg.host);
+    if (msg.host === myUsername && !isHost) {
+        isHost = true;
+        document.getElementById("startBtnWrap").classList.remove("hidden");
+    }
+}
+
+function renderPlayers(players, host) {
+    const list = document.getElementById("playerList");
+    const waiting = document.getElementById("waitingText");
+    list.innerHTML = "";
+    players.forEach(name => {
+        const card = document.createElement("div");
+        card.className = "player-card" + (name === host ? " host" : "");
+        card.innerHTML = `
+            <div class="avatar">${name[0].toUpperCase()}</div>
+            <span>${name}</span>
+            ${name === host ? '<span class="crown">👑</span>' : ""}
+            ${name === myUsername ? '<span class="tag">YOU</span>' : ""}
+        `;
+        list.appendChild(card);
+    });
+    waiting.textContent = players.length >= 2
+        ? (isHost ? "You can start the game!" : "Waiting for the host to start...")
+        : "Waiting for more players...";
+}
+
+function copyCode() {
+    const code = document.getElementById("codeDisplay").textContent;
+    navigator.clipboard.writeText(code).then(() => {
+        const el = document.querySelector(".copy-hint");
+        el.textContent = "✓ COPIED!";
+        setTimeout(() => el.textContent = "▸ COPY", 2000);
+    });
+}
+
+function startGame() {
+    send({type: "start_game"});
+}
+
+// ── NAME PHASE ─────────────────────────────────────────────────
+function onGameStarted(msg) {
+    myAssignment = msg.assigned_to;
+    document.getElementById("nameTarget").textContent = msg.assigned_to;
+    showSection("name");
+    startTimer(msg.duration, "N", () => {
+        if (!hasSubmittedName) submitName();
+    });
+}
+
+function submitName() {
+    if (hasSubmittedName) return;
+    const val = document.getElementById("standNameInput").value.trim();
+    if (!val) {
+        document.getElementById("nameStatus").textContent = "Enter a stand name!";
+        return;
+    }
+    hasSubmittedName = true;
+    send({type: "submit_name", stand_name: val});
+    document.getElementById("standNameInput").disabled = true;
+    document.getElementById("submitNameBtn").disabled = true;
+    document.getElementById("nameStatus").textContent = "✓ Submitted! Waiting for others...";
+}
+
+// ── DRAW PHASE ─────────────────────────────────────────────────
+function onPhaseChange(msg) {
+    if (msg.phase === "draw") {
+        document.getElementById("drawTarget").textContent = msg.assigned_to;
+        document.getElementById("drawStandName").textContent = msg.stand_name;
+        showSection("draw");
+        initCanvas();
+        startTimer(msg.duration, "D", () => {
+            if (!hasSubmittedDraw) submitDrawing();
+        });
+    } else if (msg.phase === "reveal") {
+        showSection("reveal");
+    } else if (msg.phase === "vote") {
+        renderVoteGrid(msg.stands);
+        showSection("vote");
+    }
+}
+
+function submitDrawing() {
+    if (hasSubmittedDraw) return;
+    hasSubmittedDraw = true;
+    const canvas = document.getElementById("drawCanvas");
+    // Flatten onto white background
+    const flat = document.createElement("canvas");
+    flat.width = canvas.width; flat.height = canvas.height;
+    const fctx = flat.getContext("2d");
+    fctx.fillStyle = "#ffffff";
+    fctx.fillRect(0, 0, flat.width, flat.height);
+    fctx.drawImage(canvas, 0, 0);
+    const data = flat.toDataURL("image/png");
+    send({type: "submit_drawing", drawing_data: data});
+    document.getElementById("submitDrawBtn").disabled = true;
+    document.getElementById("drawStatus").textContent = "✓ Submitted! Waiting for others...";
+}
+
+// ── CANVAS ─────────────────────────────────────────────────────
+const COLORS = [
+    "#000000","#ffffff","#6b7280","#d1d5db",
+    "#ef4444","#f97316","#eab308","#FFD700",
+    "#22c55e","#06b6d4","#3b82f6","#8b5cf6",
+    "#ec4899","#6B1FA8","#00FFFF","#FF006E",
+    "#7c3aed","#0ea5e9"
+];
+
+function initCanvas() {
+    const canvas = document.getElementById("drawCanvas");
+    ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    undoStack = [];
+    saveUndo();
+
+    // Color grid
+    const grid = document.getElementById("colorGrid");
+    grid.innerHTML = "";
+    COLORS.forEach(c => {
+        const sw = document.createElement("div");
+        sw.className = "color-swatch" + (c === currentColor ? " active" : "");
+        sw.style.background = c;
+        if (c === "#ffffff") sw.style.border = "2px solid #aaa";
+        sw.onclick = () => {
+            selectColor(c);
+            grid.querySelectorAll(".color-swatch").forEach(s => s.classList.remove("active"));
+            sw.classList.add("active");
+        };
+        grid.appendChild(sw);
+    });
+
+    // Mouse events
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDraw);
+    canvas.addEventListener("mouseleave", stopDraw);
+    // Touch events
+    canvas.addEventListener("touchstart", e => { e.preventDefault(); startDraw(e.touches[0]); }, {passive: false});
+    canvas.addEventListener("touchmove", e => { e.preventDefault(); draw(e.touches[0]); }, {passive: false});
+    canvas.addEventListener("touchend", e => { e.preventDefault(); stopDraw(); });
+}
+
+function getPos(e, canvas) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY,
+    };
+}
+
+function startDraw(e) {
+    drawing = true;
+    const canvas = document.getElementById("drawCanvas");
+    const pos = getPos(e, canvas);
+    lastDrawX = pos.x; lastDrawY = pos.y;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.arc(pos.x, pos.y, (currentTool === "eraser" ? currentSize * 1.5 : currentSize) / 2, 0, Math.PI * 2);
+    ctx.fillStyle = currentTool === "eraser" ? "#ffffff" : currentColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+}
+
+function draw(e) {
+    if (!drawing) return;
+    const canvas = document.getElementById("drawCanvas");
+    const pos = getPos(e, canvas);
+    // Skip sub-pixel movements to avoid excessive draw calls
+    const dx = pos.x - lastDrawX, dy = pos.y - lastDrawY;
+    if (dx * dx + dy * dy < 4) return;
+    lastDrawX = pos.x; lastDrawY = pos.y;
+    ctx.lineTo(pos.x, pos.y);
+    if (currentTool === "eraser") {
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = currentSize * 1.5;
+    } else {
+        ctx.strokeStyle = currentColor;
+        ctx.lineWidth = currentSize;
+    }
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+}
+
+function stopDraw() {
+    if (drawing) { drawing = false; saveUndo(); }
+}
+
+function saveUndo() {
+    const canvas = document.getElementById("drawCanvas");
+    if (!canvas) return;
+    undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undoCanvas() {
+    if (undoStack.length <= 1) return;
+    undoStack.pop();
+    ctx.putImageData(undoStack[undoStack.length - 1], 0, 0);
+}
+
+function clearCanvas() {
+    const canvas = document.getElementById("drawCanvas");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    saveUndo();
+}
+
+function selectColor(c) { currentColor = c; currentTool = "brush"; updateToolBtns(); }
+function selectTool(t) { currentTool = t; updateToolBtns(); }
+function selectSize(s, btn) {
+    currentSize = s;
+    document.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+}
+function updateToolBtns() {
+    document.getElementById("btnBrush").className = "tool-btn" + (currentTool === "brush" ? " active" : "");
+    document.getElementById("btnEraser").className = "tool-btn" + (currentTool === "eraser" ? " active" : "");
+}
+
+// ── TIMER ──────────────────────────────────────────────────────
+function startTimer(duration, id, onExpire) {
+    clearInterval(timerInterval);
+    let remaining = duration;
+    const total = duration;
+    const circle = document.getElementById("timerCircle" + id);
+    const text = document.getElementById("timerText" + id);
+    const C = 283;
+
+    function update() {
+        const p = Math.max(0, remaining / total);
+        circle.style.strokeDashoffset = C * (1 - p);
+        circle.style.stroke = remaining <= 10 ? "var(--pink)" : "var(--gold)";
+        text.textContent = remaining;
+        text.style.fill = remaining <= 10 ? "var(--pink)" : "var(--gold)";
+    }
+    update();
+    timerInterval = setInterval(() => {
+        remaining--;
+        update();
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            if (onExpire) onExpire();
+        }
+    }, 1000);
+}
+
+// ── REVEAL ─────────────────────────────────────────────────────
+function onRevealStand(msg) {
+    const counter = document.getElementById("revealCounter");
+    const ofText = document.getElementById("revealOfText");
+    const targetName = document.getElementById("revealTargetName");
+    const card = document.getElementById("revealCard");
+    const drawing = document.getElementById("revealDrawing");
+    const standName = document.getElementById("revealStandName");
+    const by = document.getElementById("revealBy");
+
+    counter.textContent = `STAND ${msg.index + 1} OF ${msg.total}`;
+
+    // Reset
+    ofText.classList.remove("show");
+    targetName.classList.remove("show");
+    card.classList.remove("show");
+    document.body.classList.remove("shake");
+
+    // Sequence
+    setTimeout(() => ofText.classList.add("show"), 400);
+
+    setTimeout(() => {
+        targetName.textContent = msg.target;
+        targetName.classList.add("show");
+    }, 1200);
+
+    setTimeout(() => {
+        document.body.classList.add("shake");
+    }, 2200);
+
+    setTimeout(() => {
+        if (msg.drawing) {
+            drawing.src = msg.drawing;
+            drawing.style.display = "block";
+        } else {
+            drawing.style.display = "none";
+        }
+        standName.textContent = msg.stand_name;
+        by.textContent = "CREATED BY " + msg.maker.toUpperCase();
+        card.classList.add("show");
+    }, 3400);
+}
+
+// ── VOTE ───────────────────────────────────────────────────────
+function renderVoteGrid(stands) {
+    const grid = document.getElementById("standsGrid");
+    grid.innerHTML = "";
+    stands.forEach(stand => {
+        const isMine = stand.maker === myUsername;
+        const card = document.createElement("div");
+        card.className = "stand-vote-card" + (isMine ? " mine" : " votable");
+        card.innerHTML = `
+            ${isMine ? '<div class="mine-badge">YOUR STAND</div>' : ""}
+            <img src="${stand.drawing || ""}" alt="stand" onerror="this.style.display='none'">
+            <div class="stand-vote-name">${stand.stand_name}</div>
+            <div class="stand-vote-for">FOR ${stand.target.toUpperCase()}</div>
+        `;
+        if (!isMine) {
+            card.onclick = () => {
+                if (hasVoted) return;
+                hasVoted = true;
+                send({type: "vote", target: stand.maker});
+                grid.querySelectorAll(".stand-vote-card").forEach(c => {
+                    c.classList.remove("votable");
+                    c.onclick = null;
+                });
+                card.classList.add("voted");
+                const badge = document.createElement("div");
+                badge.className = "voted-badge";
+                badge.textContent = "VOTED!";
+                card.appendChild(badge);
+            };
+        }
+        grid.appendChild(card);
+    });
+}
+
+function onVoteUpdate(msg) {
+    document.getElementById("voteProgress").textContent =
+        `${msg.vote_count} / ${msg.total} VOTES CAST`;
+}
+
+// ── RESULTS ───────────────────────────────────────────────────
+function onResults(msg) {
+    const list = document.getElementById("resultsList");
+    list.innerHTML = "";
+    const medals = ["🥇", "🥈", "🥉"];
+    msg.results.forEach((r, i) => {
+        const rank = i + 1;
+        const card = document.createElement("div");
+        card.className = `result-card rank-${Math.min(rank, 4)}`;
+        card.style.animationDelay = (i * 0.12) + "s";
+        card.innerHTML = `
+            <div class="result-rank">${medals[i] || rank}</div>
+            ${r.drawing ? `<img class="result-drawing" src="${r.drawing}" alt="">` : ""}
+            <div class="result-info">
+                <div class="result-stand-name">${r.stand_name}</div>
+                <div class="result-for">FOR ${r.target.toUpperCase()}</div>
+                <div class="result-by">BY ${r.maker.toUpperCase()}</div>
+            </div>
+            <div class="result-votes">${r.votes}<span>VOTES</span></div>
+        `;
+        list.appendChild(card);
+    });
+    showSection("results");
+}
+
+// ── BOOT ───────────────────────────────────────────────────────
+connect();
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inklust-local-agent"
+version = "0.1.0"
+description = "Local MCP agent for Continue + Ollama on InkLust-style FastAPI/Jinja2 projects"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastmcp>=3.0.0",
+]
+
+[project.scripts]
+inklust-agent = "inklust_local_agent.cli:main"
+inklust-agent-mcp = "inklust_local_agent.mcp_server:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["inklust_local_agent*"]
