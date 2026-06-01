@@ -1,10 +1,19 @@
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import json, random, string, asyncio
+import jinja2, json, random, string, asyncio
 
 app = FastAPI()
-templates = Jinja2Templates(directory="frontend/templates")
+
+# cache_size=0 → self.cache=None in Jinja2, skips the LRU key lookup entirely.
+# Needed because Jinja2 3.x on Python 3.13 tries to use env.globals (a dict)
+# as part of the cache key, which raises TypeError: unhashable type: 'dict'.
+_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader("frontend/templates"),
+    autoescape=True,
+    cache_size=0,
+)
+templates = Jinja2Templates(env=_env)
 app.mount("/frontend/static", StaticFiles(directory="frontend/static"), name="static")
 
 rooms: dict = {}
