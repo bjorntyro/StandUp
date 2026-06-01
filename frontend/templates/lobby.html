@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ── LOBBY ──────────────────────────────────────────────── -->
+<!-- ── LOBBY ──────────────────────────────────────────────────── -->
 <div id="section-lobby" class="lobby-wrap">
     <div class="lobby-header">
         <h1 id="partyNameHeader">LOADING...</h1>
-        <div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="settings-icon-btn hidden" id="settingsIconBtn" onclick="openSettingsModal()">⚙</button>
             <div class="room-code-badge" onclick="copyCode()" title="Click to copy">
                 <span id="codeDisplay">{{ room_code }}</span>
                 <span class="copy-hint">▸ COPY</span>
@@ -23,6 +24,7 @@
                 MIN 2 PLAYERS REQUIRED
             </div>
         </div>
+        <div class="settings-display" id="settingsDisplay"></div>
     </div>
     <div class="status-bar">
         <div class="status-dot" id="statusDot"></div>
@@ -30,7 +32,36 @@
     </div>
 </div>
 
-<!-- ── NAME PHASE ─────────────────────────────────────────── -->
+<!-- ── SETTINGS MODAL (host only) ─────────────────────────────── -->
+<div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-box panel">
+        <div class="modal-title">GAME SETTINGS</div>
+        <div class="field">
+            <label>Name Phase Duration</label>
+            <select id="settings-name-duration" class="input">
+                <option value="30">30 seconds</option>
+                <option value="60">1 minute</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Drawing Phase Duration</label>
+            <select id="settings-draw-duration" class="input">
+                <option value="60">1 minute</option>
+                <option value="120">2 minutes</option>
+                <option value="300">5 minutes</option>
+                <option value="600">10 minutes</option>
+            </select>
+        </div>
+        <div class="btn-group" style="margin-top:24px;">
+            <button class="btn btn-primary" onclick="saveSettings()">SAVE</button>
+            <button class="btn" onclick="closeSettingsModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── NAME PHASE ─────────────────────────────────────────────── -->
 <div id="section-name" class="game-section hidden">
     <div class="phase-label">PHASE 1 — NAME YOUR STAND</div>
     <div class="timer-wrap">
@@ -53,7 +84,7 @@
     </div>
 </div>
 
-<!-- ── DRAW PHASE ─────────────────────────────────────────── -->
+<!-- ── DRAW PHASE ─────────────────────────────────────────────── -->
 <div id="section-draw" class="game-section hidden" style="padding-bottom:80px;">
     <div class="phase-label">PHASE 2 — DRAW THE STAND</div>
     <div class="timer-wrap">
@@ -90,7 +121,7 @@
                 <button class="tool-btn" onclick="undoCanvas()">↩ UNDO</button>
                 <button class="tool-btn btn-danger" onclick="clearCanvas()">✕ CLEAR</button>
             </div>
-            <canvas id="drawCanvas" class="canvas-panel" width="500" height="330"
+            <canvas id="drawCanvas" class="canvas-panel" width="720" height="480"
                     style="max-width:100%; touch-action:none;"></canvas>
             <button class="btn btn-primary" id="submitDrawBtn" onclick="submitDrawing()">SUBMIT DRAWING</button>
             <div id="drawStatus" class="error-msg" style="color:var(--cyan);"></div>
@@ -98,19 +129,19 @@
     </div>
 </div>
 
-<!-- ── REVEAL PHASE ───────────────────────────────────────── -->
+<!-- ── REVEAL PHASE ───────────────────────────────────────────── -->
 <div id="section-reveal" class="reveal-section hidden">
     <div class="reveal-counter" id="revealCounter">STAND 1 OF 1</div>
     <div class="reveal-of-text" id="revealOfText">THE STAND OF...</div>
     <div class="reveal-target-name" id="revealTargetName"></div>
     <div class="reveal-card" id="revealCard">
-        <img id="revealDrawing" src="" alt="stand drawing">
         <div class="reveal-stand-name" id="revealStandName"></div>
+        <img id="revealDrawing" src="" alt="stand drawing">
         <div class="reveal-by" id="revealBy"></div>
     </div>
 </div>
 
-<!-- ── VOTE PHASE ─────────────────────────────────────────── -->
+<!-- ── VOTE PHASE ─────────────────────────────────────────────── -->
 <div id="section-vote" class="game-section hidden">
     <div class="vote-title">VOTE FOR THE BEST STAND!</div>
     <div class="vote-subtitle">YOU CANNOT VOTE FOR YOUR OWN STAND</div>
@@ -118,12 +149,15 @@
     <div class="vote-progress" id="voteProgress"></div>
 </div>
 
-<!-- ── RESULTS PHASE ──────────────────────────────────────── -->
+<!-- ── RESULTS PHASE ──────────────────────────────────────────── -->
 <div id="section-results" class="game-section hidden">
     <div class="results-title">FINAL RESULTS</div>
     <div class="results-list" id="resultsList"></div>
     <div style="margin-top:36px;">
-        <button class="btn btn-primary btn-lg" onclick="window.location.href='/'">PLAY AGAIN</button>
+        <div class="btn-group">
+            <button class="btn btn-danger" onclick="quitGame()">QUIT</button>
+            <button class="btn btn-primary btn-lg" onclick="playAgain()">PLAY AGAIN</button>
+        </div>
     </div>
 </div>
 
@@ -141,6 +175,8 @@ let timerInterval = null;
 let hasVoted = false;
 let hasSubmittedName = false;
 let hasSubmittedDraw = false;
+let currentNameDuration = 30;
+let currentDrawDuration = 120;
 
 // Canvas
 let ctx = null;
@@ -197,24 +233,99 @@ function setStatus(ok, text) {
 // ── MESSAGE HANDLER ────────────────────────────────────────────
 function handleMessage(msg) {
     switch (msg.type) {
-        case "room_joined":   onRoomJoined(msg);  break;
-        case "player_update": onPlayerUpdate(msg); break;
-        case "error":         alert("⚠ " + msg.message); break;
-        case "game_started":  onGameStarted(msg); break;
-        case "phase_change":  onPhaseChange(msg); break;
-        case "reveal_stand":  onRevealStand(msg); break;
-        case "vote_update":   onVoteUpdate(msg);  break;
-        case "results":       onResults(msg);     break;
+        case "room_joined":      onRoomJoined(msg);      break;
+        case "player_update":    onPlayerUpdate(msg);    break;
+        case "error":            alert("⚠ " + msg.message); break;
+        case "game_started":     onGameStarted(msg);     break;
+        case "phase_change":     onPhaseChange(msg);     break;
+        case "reveal_stand":     onRevealStand(msg);     break;
+        case "vote_update":      onVoteUpdate(msg);      break;
+        case "results":          onResults(msg);         break;
+        case "settings_updated": onSettingsUpdated(msg); break;
+        case "game_reset":       onGameReset(msg);       break;
     }
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────
+function formatDuration(s) {
+    return s < 60 ? s + "s" : (s / 60) + "min";
+}
+
+function updateSettingsDisplay() {
+    const el = document.getElementById("settingsDisplay");
+    if (el) el.textContent = "NAME: " + formatDuration(currentNameDuration) + "  ·  DRAW: " + formatDuration(currentDrawDuration);
+}
+
+function openSettingsModal() {
+    document.getElementById("settings-name-duration").value = currentNameDuration;
+    document.getElementById("settings-draw-duration").value = currentDrawDuration;
+    document.getElementById("modal-settings").classList.remove("hidden");
+}
+
+function closeSettingsModal() {
+    document.getElementById("modal-settings").classList.add("hidden");
+}
+
+function saveSettings() {
+    const nd = parseInt(document.getElementById("settings-name-duration").value);
+    const dd = parseInt(document.getElementById("settings-draw-duration").value);
+    send({type: "update_settings", name_duration: nd, draw_duration: dd});
+    closeSettingsModal();
+}
+
+function onSettingsUpdated(msg) {
+    currentNameDuration = msg.name_duration;
+    currentDrawDuration = msg.draw_duration;
+    updateSettingsDisplay();
+}
+
+// ── GAME RESET ─────────────────────────────────────────────────
+function onGameReset(msg) {
+    hasSubmittedName = false;
+    hasSubmittedDraw = false;
+    hasVoted = false;
+    myAssignment = null;
+    clearInterval(timerInterval);
+    currentNameDuration = msg.name_duration || 30;
+    currentDrawDuration = msg.draw_duration || 120;
+
+    const nameInput = document.getElementById("standNameInput");
+    if (nameInput) { nameInput.disabled = false; nameInput.value = ""; }
+    const submitNameBtn = document.getElementById("submitNameBtn");
+    if (submitNameBtn) submitNameBtn.disabled = false;
+    document.getElementById("nameStatus").textContent = "";
+    document.getElementById("drawStatus").textContent = "";
+
+    isHost = msg.host === myUsername;
+    document.getElementById("partyNameHeader").textContent = msg.party_name;
+    renderPlayers(msg.players, msg.host);
+
+    const startWrap = document.getElementById("startBtnWrap");
+    const settingsBtn = document.getElementById("settingsIconBtn");
+    if (isHost) {
+        startWrap.classList.remove("hidden");
+        settingsBtn.classList.remove("hidden");
+    } else {
+        startWrap.classList.add("hidden");
+        settingsBtn.classList.add("hidden");
+    }
+    updateSettingsDisplay();
+    showSection("lobby");
 }
 
 // ── LOBBY ──────────────────────────────────────────────────────
 function onRoomJoined(msg) {
     isHost = msg.is_host;
+    currentNameDuration = msg.name_duration || 30;
+    currentDrawDuration = msg.draw_duration || 120;
     document.getElementById("partyNameHeader").textContent = msg.party_name;
     document.getElementById("codeDisplay").textContent = msg.room_code;
     renderPlayers(msg.players, msg.room_code);
-    if (isHost) document.getElementById("startBtnWrap").classList.remove("hidden");
+    if (isHost) {
+        document.getElementById("startBtnWrap").classList.remove("hidden");
+        document.getElementById("settingsIconBtn").classList.remove("hidden");
+    }
+    updateSettingsDisplay();
     showSection("lobby");
 }
 
@@ -223,6 +334,7 @@ function onPlayerUpdate(msg) {
     if (msg.host === myUsername && !isHost) {
         isHost = true;
         document.getElementById("startBtnWrap").classList.remove("hidden");
+        document.getElementById("settingsIconBtn").classList.remove("hidden");
     }
 }
 
@@ -305,7 +417,6 @@ function submitDrawing() {
     if (hasSubmittedDraw) return;
     hasSubmittedDraw = true;
     const canvas = document.getElementById("drawCanvas");
-    // Flatten onto white background
     const flat = document.createElement("canvas");
     flat.width = canvas.width; flat.height = canvas.height;
     const fctx = flat.getContext("2d");
@@ -335,7 +446,6 @@ function initCanvas() {
     undoStack = [];
     saveUndo();
 
-    // Color grid
     const grid = document.getElementById("colorGrid");
     grid.innerHTML = "";
     COLORS.forEach(c => {
@@ -351,12 +461,10 @@ function initCanvas() {
         grid.appendChild(sw);
     });
 
-    // Mouse events
     canvas.addEventListener("mousedown", startDraw);
     canvas.addEventListener("mousemove", draw);
     canvas.addEventListener("mouseup", stopDraw);
     canvas.addEventListener("mouseleave", stopDraw);
-    // Touch events
     canvas.addEventListener("touchstart", e => { e.preventDefault(); startDraw(e.touches[0]); }, {passive: false});
     canvas.addEventListener("touchmove", e => { e.preventDefault(); draw(e.touches[0]); }, {passive: false});
     canvas.addEventListener("touchend", e => { e.preventDefault(); stopDraw(); });
@@ -390,7 +498,6 @@ function draw(e) {
     if (!drawing) return;
     const canvas = document.getElementById("drawCanvas");
     const pos = getPos(e, canvas);
-    // Skip sub-pixel movements to avoid excessive draw calls
     const dx = pos.x - lastDrawX, dy = pos.y - lastDrawY;
     if (dx * dx + dy * dy < 4) return;
     lastDrawX = pos.x; lastDrawY = pos.y;
@@ -484,13 +591,11 @@ function onRevealStand(msg) {
 
     counter.textContent = `STAND ${msg.index + 1} OF ${msg.total}`;
 
-    // Reset
     ofText.classList.remove("show");
     targetName.classList.remove("show");
     card.classList.remove("show");
     document.body.classList.remove("shake");
 
-    // Sequence
     setTimeout(() => ofText.classList.add("show"), 400);
 
     setTimeout(() => {
@@ -503,13 +608,13 @@ function onRevealStand(msg) {
     }, 2200);
 
     setTimeout(() => {
+        standName.textContent = msg.stand_name;
         if (msg.drawing) {
             drawing.src = msg.drawing;
             drawing.style.display = "block";
         } else {
             drawing.style.display = "none";
         }
-        standName.textContent = msg.stand_name;
         by.textContent = "CREATED BY " + msg.maker.toUpperCase();
         card.classList.add("show");
     }, 3400);
@@ -577,6 +682,14 @@ function onResults(msg) {
         list.appendChild(card);
     });
     showSection("results");
+}
+
+function quitGame() {
+    window.location.href = "/";
+}
+
+function playAgain() {
+    send({type: "reset_game"});
 }
 
 // ── BOOT ───────────────────────────────────────────────────────

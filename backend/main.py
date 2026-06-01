@@ -49,15 +49,15 @@ async def broadcast(code: str, msg: dict):
         room["players"].pop(u, None)
 
 
-async def timer_name(code: str):
-    await asyncio.sleep(33)  # 3 s grace after 30 s frontend countdown
+async def timer_name(code: str, duration: int):
+    await asyncio.sleep(duration + 3)
     room = rooms.get(code)
     if room and room["phase"] == "name":
         await _start_draw(code)
 
 
-async def timer_draw(code: str):
-    await asyncio.sleep(123)  # 3 s grace after 120 s frontend countdown
+async def timer_draw(code: str, duration: int):
+    await asyncio.sleep(duration + 3)
     room = rooms.get(code)
     if room and room["phase"] == "draw":
         await _start_reveal(code)
@@ -68,6 +68,7 @@ async def _start_draw(code: str):
     if not room:
         return
     room["phase"] = "draw"
+    dd = room.get("draw_duration", 120)
     for maker, pl in list(room["players"].items()):
         try:
             await pl["ws"].send_text(json.dumps({
@@ -75,11 +76,11 @@ async def _start_draw(code: str):
                 "phase": "draw",
                 "assigned_to": room["assignments"].get(maker),
                 "stand_name": room["stand_names"].get(maker, "???"),
-                "duration": 120,
+                "duration": dd,
             }))
         except Exception:
             pass
-    asyncio.create_task(timer_draw(code))
+    asyncio.create_task(timer_draw(code, dd))
 
 
 async def _start_reveal(code: str):
@@ -146,6 +147,10 @@ async def create_room(request: Request):
     if not pname or not uname:
         return {"error": "Campi mancanti"}
     code = gen_code()
+    valid_name = [30, 60, 120, 300]
+    valid_draw = [60, 120, 300, 600]
+    nd = data.get("name_duration", 30)
+    dd = data.get("draw_duration", 120)
     rooms[code] = {
         "code": code,
         "party_name": pname,
@@ -158,6 +163,8 @@ async def create_room(request: Request):
         "votes": {},
         "reveal_order": [],
         "reveal_index": 0,
+        "name_duration": nd if nd in valid_name else 30,
+        "draw_duration": dd if dd in valid_draw else 120,
     }
     return {"room_code": code}
 
@@ -194,6 +201,8 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
         "players": list(room["players"].keys()),
         "is_host": username == room["host"],
         "phase": room["phase"],
+        "name_duration": room.get("name_duration", 30),
+        "draw_duration": room.get("draw_duration", 120),
     }))
     await broadcast(room_code, {
         "type": "player_update",
@@ -218,17 +227,18 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                 room["reveal_order"] = players[:]
                 random.shuffle(room["reveal_order"])
                 room["phase"] = "name"
+                nd = room.get("name_duration", 30)
                 for maker, pl in list(room["players"].items()):
                     try:
                         await pl["ws"].send_text(json.dumps({
                             "type": "game_started",
                             "phase": "name",
                             "assigned_to": room["assignments"][maker],
-                            "duration": 30,
+                            "duration": nd,
                         }))
                     except Exception:
                         pass
-                asyncio.create_task(timer_name(room_code))
+                asyncio.create_task(timer_name(room_code, nd))
 
             elif t == "submit_name":
                 if room["phase"] != "name" or username in room["stand_names"]:
@@ -269,6 +279,42 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                             "votes": vc[m],
                         } for m in room["reveal_order"]], key=lambda x: -x["votes"])
                         await broadcast(room_code, {"type": "results", "results": results})
+
+            elif t == "update_settings":
+                if username != room["host"] or room["phase"] != "lobby":
+                    continue
+                valid_name = [30, 60, 120, 300]
+                valid_draw = [60, 120, 300, 600]
+                nd = msg.get("name_duration")
+                dd = msg.get("draw_duration")
+                if nd in valid_name:
+                    room["name_duration"] = nd
+                if dd in valid_draw:
+                    room["draw_duration"] = dd
+                await broadcast(room_code, {
+                    "type": "settings_updated",
+                    "name_duration": room["name_duration"],
+                    "draw_duration": room["draw_duration"],
+                })
+
+            elif t == "reset_game":
+                if room["phase"] != "results":
+                    continue
+                room["phase"] = "lobby"
+                room["assignments"] = {}
+                room["stand_names"] = {}
+                room["drawings"] = {}
+                room["votes"] = {}
+                room["reveal_order"] = []
+                room["reveal_index"] = 0
+                await broadcast(room_code, {
+                    "type": "game_reset",
+                    "party_name": room["party_name"],
+                    "players": list(room["players"].keys()),
+                    "host": room["host"],
+                    "name_duration": room["name_duration"],
+                    "draw_duration": room["draw_duration"],
+                })
 
     except WebSocketDisconnect:
         room["players"].pop(username, None)

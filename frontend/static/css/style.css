@@ -629,13 +629,13 @@ body::after {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     border: 3px solid var(--gold);
     border-radius: 4px;
-    padding: 20px;
+    padding: 24px 20px 20px;
     background: rgba(13,0,21,0.95);
     box-shadow: 0 0 60px rgba(255,215,0,0.3);
-    max-width: 460px;
+    max-width: 720px;
     width: 100%;
     transform: translateX(120%) scale(0.9);
     opacity: 0;
@@ -645,7 +645,9 @@ body::after {
 .reveal-card.show { transform: translateX(0) scale(1); opacity: 1; }
 .reveal-card img {
     width: 100%;
-    max-width: 360px;
+    max-width: 100%;
+    aspect-ratio: 3/2;
+    object-fit: contain;
     border: 1.5px solid rgba(255,215,0,0.2);
     border-radius: 2px;
     display: block;
@@ -653,10 +655,12 @@ body::after {
 }
 .reveal-stand-name {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 36px;
+    font-size: clamp(36px, 6vw, 56px);
     letter-spacing: 5px;
     color: var(--gold);
     text-shadow: 0 0 20px rgba(255,215,0,0.5), 2px 2px 0 var(--pink);
+    text-align: center;
+    line-height: 1;
 }
 .reveal-by {
     font-size: 12px;
@@ -837,6 +841,57 @@ body::after {
     min-width: 60px;
 }
 .result-votes span { font-size: 13px; font-family: 'Poppins', sans-serif; color: var(--muted); display: block; }
+
+/* ─── SELECT ─────────────────────────────────────────────────── */
+select.input {
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 32px;
+}
+select.input option { background: #0d0021; color: #fff; }
+
+/* ─── SETTINGS IN CREATE MODAL ───────────────────────────────── */
+.settings-divider {
+    font-family: 'Bangers', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-align: center;
+    margin: 4px 0 12px;
+    border-top: 1px solid rgba(255,215,0,0.12);
+    padding-top: 14px;
+}
+.fields-row { display: flex; gap: 12px; }
+.field-half { flex: 1; min-width: 0; }
+
+/* ─── SETTINGS ICON (host only) ──────────────────────────────── */
+.settings-icon-btn {
+    font-size: 18px;
+    background: rgba(255,215,0,0.05);
+    border: 1.5px solid rgba(255,215,0,0.3);
+    border-radius: 4px;
+    color: var(--gold);
+    cursor: pointer;
+    padding: 6px 10px;
+    line-height: 1;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.settings-icon-btn:hover { border-color: var(--gold); box-shadow: 0 0 10px rgba(255,215,0,0.3); }
+
+.settings-display {
+    font-family: 'Bangers', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 6px;
+}
 
 /* ─── STATUS BAR ─────────────────────────────────────────────── */
 .status-bar {
