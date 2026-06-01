@@ -130,12 +130,12 @@ async def _do_reveals(code: str):
 
 @app.get("/")
 def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request})
+    return templates.TemplateResponse(request, "home.html")
 
 
 @app.get("/lobby/{room_code}")
 def lobby_page(request: Request, room_code: str):
-    return templates.TemplateResponse("lobby.html", {"request": request, "room_code": room_code})
+    return templates.TemplateResponse(request, "lobby.html", {"room_code": room_code})
 
 
 @app.post("/api/create_room")
