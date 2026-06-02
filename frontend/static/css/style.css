@@ -1018,8 +1018,8 @@ select.input option { background: #0d0021; color: #fff; }
     font-style: italic;
     opacity: 0.8;
     margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
 }
 

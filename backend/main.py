@@ -24,12 +24,12 @@ def gen_code() -> str:
 
 
 def derangement(lst: list) -> dict:
-    indices = list(range(len(lst)))
-    while True:
-        p = indices[:]
-        random.shuffle(p)
-        if all(p[i] != i for i in range(len(lst))):
-            return {lst[i]: lst[p[i]] for i in range(len(lst))}
+    # Sattolo's algorithm: O(n), guaranteed single-cycle derangement
+    a = list(range(len(lst)))
+    for i in range(len(a) - 1, 0, -1):
+        j = random.randint(0, i - 1)  # i-1 (not i) is what makes it a cycle
+        a[i], a[j] = a[j], a[i]
+    return {lst[i]: lst[a[i]] for i in range(len(lst))}
 
 
 async def broadcast(code: str, msg: dict):
@@ -375,6 +375,7 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                     await ws.send_text(json.dumps({"type": "error", "message": "Servono almeno 2 giocatori!"}))
                     continue
                 players = list(room["players"].keys())
+                random.shuffle(players)
                 room["assignments"] = derangement(players)
                 room["reveal_order"] = players[:]
                 random.shuffle(room["reveal_order"])
