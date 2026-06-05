@@ -334,6 +334,11 @@ function onGameReset(msg) {
 
     document.getElementById("drawStatus").textContent = "";
 
+    document.getElementById("revealCard").classList.remove("show");
+    document.getElementById("revealOfText").classList.remove("show");
+    document.getElementById("revealTargetName").classList.remove("show");
+    document.getElementById("revealDrawing").src = "";
+
     isHost = msg.host === myUsername;
     document.getElementById("partyNameHeader").textContent = msg.party_name;
     renderPlayers(msg.players, msg.host);
@@ -495,6 +500,10 @@ function onPhaseChange(msg) {
             document.getElementById("drawStatus").textContent = "✓ Already submitted! Waiting for others...";
         }
     } else if (msg.phase === "reveal") {
+        document.getElementById("revealCard").classList.remove("show");
+        document.getElementById("revealOfText").classList.remove("show");
+        document.getElementById("revealTargetName").classList.remove("show");
+        document.getElementById("revealDrawing").src = "";
         showSection("reveal");
         document.getElementById("revealActions").classList.add("hidden");
         document.getElementById("revealNextStatus").textContent = "";
