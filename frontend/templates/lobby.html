@@ -102,8 +102,8 @@
     <div class="name-form" style="max-width:560px;">
         <textarea id="standPowerInput" class="stand-power-input"
                   placeholder="Can stop time for 5 seconds, punches at the speed of light..."
-                  maxlength="120" rows="3"></textarea>
-        <div class="power-char-count"><span id="powerCharCount">0</span>/120</div>
+                  maxlength="150" rows="3"></textarea>
+        <div class="power-char-count"><span id="powerCharCount">0</span>/150</div>
         <button class="btn btn-primary btn-lg" id="submitPowerBtn" onclick="submitPowers()">SUBMIT POWERS</button>
         <div id="powerStatus" class="error-msg" style="color:var(--cyan);"></div>
     </div>
@@ -894,7 +894,7 @@ async function downloadRevealCard() {
     wrapCanvasText(dc, data.stand_power || "—", W / 2, py, W - 120, 23);
 
     // Estimate how many lines power text takes
-    const powerLines = Math.ceil((data.stand_power || "—").length / 60) || 1;
+    const powerLines = Math.ceil((data.stand_power || "—").length / 50) || 1;
     const drawingY = 165 + powerLines * 24;
 
     // Drawing image

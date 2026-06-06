@@ -976,6 +976,8 @@ select.input option { background: #0d0021; color: #fff; }
     line-height: 1.5;
     max-width: 640px;
     padding: 0 8px;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .reveal-actions {
@@ -1007,8 +1009,10 @@ select.input option { background: #0d0021; color: #fff; }
     opacity: 0.8;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 /* ─── RESULTS — POWERS TEXT ──────────────────────────────────── */
