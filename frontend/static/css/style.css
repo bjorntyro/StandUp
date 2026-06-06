@@ -1027,3 +1027,378 @@ select.input option { background: #0d0021; color: #fff; }
     line-height: 1.4;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   REQUIEM FEATURE STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── REQUIEM BADGE ───────────────────────────────────────────── */
+.requiem-badge {
+    display: inline-block;
+    padding: 3px 14px;
+    background: linear-gradient(135deg, rgba(76,29,149,0.85), rgba(107,31,168,0.85));
+    border: 1px solid rgba(155,63,216,0.6);
+    color: #C87FFF;
+    font-family: 'Bangers', sans-serif;
+    font-size: 16px;
+    letter-spacing: 5px;
+    border-radius: 3px;
+    text-shadow: 0 0 12px rgba(155,63,216,0.9);
+    box-shadow: 0 0 14px rgba(107,31,168,0.35);
+}
+
+/* ─── REQUIEM PHASE LABEL ─────────────────────────────────────── */
+.requiem-phase-label {
+    color: #C87FFF !important;
+    text-shadow: 0 0 10px rgba(155,63,216,0.7) !important;
+}
+
+/* ─── REQUIEM STAND TITLE (in powers section) ─────────────────── */
+.requiem-stand-title {
+    color: #C87FFF !important;
+    text-shadow: 0 0 30px rgba(155,63,216,0.7) !important;
+}
+
+/* ─── REQUIEM INPUT ───────────────────────────────────────────── */
+.requiem-input {
+    border-color: rgba(107,31,168,0.35) !important;
+    background: rgba(107,31,168,0.06) !important;
+}
+.requiem-input:focus {
+    border-color: var(--purple-light) !important;
+    box-shadow: 0 0 0 4px rgba(107,31,168,0.18), 0 0 24px rgba(107,31,168,0.2) !important;
+}
+
+/* ─── REQUIEM BUTTONS ─────────────────────────────────────────── */
+.btn-requiem {
+    font-family: 'Bangers', sans-serif;
+    font-size: 22px;
+    letter-spacing: 4px;
+    padding: 14px 36px;
+    border-radius: 3px;
+    border: 2px solid var(--purple-light);
+    background: transparent;
+    color: #C87FFF;
+    cursor: pointer;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    box-shadow: 0 0 20px rgba(107,31,168,0.3);
+}
+.btn-requiem:hover { box-shadow: 0 0 40px rgba(107,31,168,0.6); border-color: #C87FFF; }
+.btn-requiem:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-purple {
+    border-color: var(--purple-light);
+    color: #C87FFF;
+    box-shadow: 0 0 20px rgba(107,31,168,0.25);
+}
+.btn-purple:hover { box-shadow: 0 0 35px rgba(107,31,168,0.5); }
+
+/* ─── VIEW ORIGINAL STAND BUTTON ─────────────────────────────── */
+.btn-view-original {
+    font-family: 'Bangers', sans-serif;
+    letter-spacing: 2px;
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid rgba(107,31,168,0.5);
+    background: rgba(107,31,168,0.1);
+    color: #C87FFF;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: box-shadow 0.2s;
+}
+.btn-view-original:hover { box-shadow: 0 0 16px rgba(107,31,168,0.5); background: rgba(107,31,168,0.2); }
+
+.btn-view-original-float {
+    font-family: 'Bangers', sans-serif;
+    letter-spacing: 3px;
+    font-size: 15px;
+    padding: 10px 22px;
+    border: 1px solid rgba(107,31,168,0.45);
+    background: rgba(107,31,168,0.08);
+    color: #C87FFF;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: box-shadow 0.2s, background 0.2s;
+    margin-top: 12px;
+}
+.btn-view-original-float:hover { box-shadow: 0 0 20px rgba(107,31,168,0.5); background: rgba(107,31,168,0.18); }
+
+/* ─── ORIGINAL REF PANEL (in draw section) ────────────────────── */
+.original-ref-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: #C87FFF;
+    text-shadow: 0 0 10px rgba(155,63,216,0.5);
+    margin-bottom: 6px;
+    word-break: break-word;
+}
+.original-ref-thumb {
+    width: 100%;
+    max-width: 160px;
+    aspect-ratio: 3/2;
+    object-fit: contain;
+    background: white;
+    border: 1px solid rgba(107,31,168,0.4);
+    border-radius: 2px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* ─── REQUIEM NAME BADGE (in draw section) ────────────────────── */
+.requiem-name-badge {
+    color: #C87FFF !important;
+    text-shadow: 0 0 15px rgba(155,63,216,0.6) !important;
+}
+
+/* ─── REQUIEM TIMER CIRCLE ────────────────────────────────────── */
+.requiem-timer { stroke: var(--purple-light) !important; }
+
+/* ─── REQUIEM INTRO SECTION ───────────────────────────────────── */
+.requiem-intro-section {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #050010;
+    overflow: hidden;
+}
+.requiem-intro-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(107,31,168,0.4) 0%, rgba(5,0,16,0) 70%);
+    animation: requiemPulse 2s ease-in-out infinite alternate;
+}
+@keyframes requiemPulse {
+    from { opacity: 0.6; transform: scale(0.95); }
+    to   { opacity: 1;   transform: scale(1.05); }
+}
+.requiem-intro-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 32px;
+    animation: requiemSlideIn 0.6s cubic-bezier(0.16,1,0.3,1);
+}
+@keyframes requiemSlideIn {
+    from { transform: translateY(40px) scale(0.9); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+.requiem-intro-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(80px, 22vw, 160px);
+    letter-spacing: 12px;
+    color: #C87FFF;
+    text-shadow: 0 0 60px rgba(155,63,216,1), 0 0 120px rgba(107,31,168,0.6);
+    line-height: 0.9;
+    animation: requiemGlow 1.5s ease-in-out infinite alternate;
+}
+@keyframes requiemGlow {
+    from { text-shadow: 0 0 40px rgba(155,63,216,0.8), 0 0 80px rgba(107,31,168,0.4); }
+    to   { text-shadow: 0 0 80px rgba(155,63,216,1),   0 0 160px rgba(107,31,168,0.8); }
+}
+.requiem-intro-sub {
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: rgba(200,127,255,0.7);
+    text-transform: uppercase;
+}
+.requiem-intro-divider {
+    width: 120px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(155,63,216,0.8), transparent);
+    margin: 4px 0;
+}
+.requiem-intro-assign {
+    font-family: 'Bangers', sans-serif;
+    font-size: 18px;
+    letter-spacing: 6px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 6px;
+}
+.requiem-intro-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 7vw, 52px);
+    letter-spacing: 5px;
+    color: #FFD700;
+    text-shadow: 0 0 30px rgba(255,215,0,0.6);
+    word-break: break-word;
+    max-width: 700px;
+}
+.requiem-intro-hint {
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: rgba(200,127,255,0.4);
+    text-transform: uppercase;
+    margin-top: 16px;
+    animation: blink 1.4s ease-in-out infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 0.9; }
+}
+
+/* ─── REQUIEM REVEAL CARD ─────────────────────────────────────── */
+.requiem-reveal-card {
+    border-color: rgba(155,63,216,0.45) !important;
+    background: rgba(20,0,40,0.7) !important;
+}
+.requiem-reveal-target {
+    color: #C87FFF !important;
+    text-shadow: 0 0 30px rgba(155,63,216,0.7) !important;
+}
+.requiem-card-name {
+    color: #C87FFF !important;
+    text-shadow: 0 0 20px rgba(155,63,216,0.7) !important;
+}
+
+/* ─── RESULTS TABS ────────────────────────────────────────────── */
+.results-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+}
+.results-tab {
+    font-family: 'Bangers', sans-serif;
+    font-size: 20px;
+    letter-spacing: 4px;
+    padding: 10px 28px;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.2s;
+}
+.results-tab.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 20px rgba(255,215,0,0.2);
+}
+.results-tab:last-child.active {
+    border-color: var(--purple-light);
+    color: #C87FFF;
+    box-shadow: 0 0 20px rgba(107,31,168,0.3);
+}
+
+/* ─── REQUIEM RESULT CARD ─────────────────────────────────────── */
+.requiem-result-card {
+    border-color: rgba(107,31,168,0.35) !important;
+}
+.requiem-result-card::after { background: linear-gradient(to bottom, rgba(107,31,168,0.15), transparent) !important; }
+.requiem-result-name {
+    color: #C87FFF !important;
+    text-shadow: 0 0 12px rgba(155,63,216,0.5) !important;
+}
+
+/* ─── CLICKABLE RESULT CARD ───────────────────────────────────── */
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s !important;
+}
+.clickable-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 8px 32px rgba(255,215,0,0.15) !important;
+}
+.requiem-result-card.clickable-card:hover {
+    box-shadow: 0 8px 32px rgba(107,31,168,0.25) !important;
+}
+
+/* ─── STAND PREVIEW MODAL ─────────────────────────────────────── */
+.stand-preview-box {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px 28px 20px;
+    animation: slideUp 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.preview-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.preview-close:hover { color: var(--text); }
+
+.preview-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 5vw, 44px);
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-shadow: 0 0 20px rgba(255,215,0,0.5);
+    text-align: center;
+    word-break: break-word;
+}
+.requiem-preview-name {
+    color: #C87FFF !important;
+    text-shadow: 0 0 20px rgba(155,63,216,0.7) !important;
+}
+.preview-power {
+    font-size: 14px;
+    color: var(--cyan);
+    font-style: italic;
+    text-align: center;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+.requiem-preview-power { color: #C87FFF !important; }
+.preview-drawing {
+    width: 100%;
+    aspect-ratio: 3/2;
+    object-fit: contain;
+    background: white;
+    border-radius: 2px;
+    display: block;
+}
+.preview-attrib {
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-align: center;
+    text-transform: uppercase;
+}
+.preview-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ─── REQUIEM VOTE CARDS ──────────────────────────────────────── */
+.requiem-vote-card { border-color: rgba(107,31,168,0.35) !important; }
+.requiem-vote-badge {
+    font-family: 'Bangers', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #C87FFF;
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+.requiem-vote-name { color: #C87FFF !important; }
+.requiem-mine-badge { background: rgba(107,31,168,0.5) !important; color: #C87FFF !important; }
+.requiem-voted-badge { background: rgba(107,31,168,0.7) !important; }
+

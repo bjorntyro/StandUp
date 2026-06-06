@@ -27,9 +27,24 @@ def derangement(lst: list) -> dict:
     # Sattolo's algorithm: O(n), guaranteed single-cycle derangement
     a = list(range(len(lst)))
     for i in range(len(a) - 1, 0, -1):
-        j = random.randint(0, i - 1)  # i-1 (not i) is what makes it a cycle
+        j = random.randint(0, i - 1)
         a[i], a[j] = a[j], a[i]
     return {lst[i]: lst[a[i]] for i in range(len(lst))}
+
+
+def requiem_assignment(players: list, original_assignments: dict) -> dict:
+    """Assign each player a stand to requiem.
+    Strict: not own stand AND not the stand drawn for them.
+    Fallback: just not own stand (Sattolo derangement).
+    """
+    reverse = {v: k for k, v in original_assignments.items()}
+    for _ in range(500):
+        perm = players[:]
+        random.shuffle(perm)
+        result = {players[i]: perm[i] for i in range(len(players))}
+        if all(result[p] != p and result[p] != reverse.get(p) for p in players):
+            return result
+    return derangement(players)
 
 
 async def broadcast(code: str, msg: dict):
@@ -65,6 +80,20 @@ async def timer_draw(code: str, duration: int):
     room = rooms.get(code)
     if room and room["phase"] == "draw":
         await _start_reveal(code)
+
+
+async def timer_requiem_powers(code: str, duration: int):
+    await asyncio.sleep(duration + 3)
+    room = rooms.get(code)
+    if room and room["phase"] == "requiem_powers":
+        await _start_requiem_draw(code)
+
+
+async def timer_requiem_draw(code: str, duration: int):
+    await asyncio.sleep(duration + 3)
+    room = rooms.get(code)
+    if room and room["phase"] == "requiem_draw":
+        await _start_requiem_reveal(code)
 
 
 async def _start_powers(code: str):
@@ -179,6 +208,136 @@ async def _do_reveals(code: str):
     await broadcast(code, {"type": "phase_change", "phase": "vote", "stands": stands})
 
 
+async def _start_requiem_powers(code: str):
+    room = rooms.get(code)
+    if not room:
+        return
+    players = room["all_players"]
+    room["requiem_assignments"] = requiem_assignment(players, room["assignments"])
+    room["phase"] = "requiem_powers"
+    pd = room.get("name_duration", 30)
+    room["phase_started_at"] = time.time()
+    room["phase_duration"] = pd
+    for player, pl in list(room["players"].items()):
+        orig = room["requiem_assignments"][player]
+        try:
+            await pl["ws"].send_text(json.dumps({
+                "type": "phase_change",
+                "phase": "requiem_powers",
+                "original_maker": orig,
+                "stand_name": room["stand_names"].get(orig, "???"),
+                "stand_power": room["stand_powers"].get(orig, ""),
+                "drawing": room["drawings"].get(orig, ""),
+                "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                "duration": pd,
+            }))
+        except Exception:
+            pass
+    asyncio.create_task(timer_requiem_powers(code, pd))
+
+
+async def _start_requiem_draw(code: str):
+    room = rooms.get(code)
+    if not room:
+        return
+    room["phase"] = "requiem_draw"
+    dd = room.get("draw_duration", 120)
+    room["phase_started_at"] = time.time()
+    room["phase_duration"] = dd
+    for player, pl in list(room["players"].items()):
+        orig = room["requiem_assignments"][player]
+        try:
+            await pl["ws"].send_text(json.dumps({
+                "type": "phase_change",
+                "phase": "requiem_draw",
+                "original_maker": orig,
+                "stand_name": room["stand_names"].get(orig, "???"),
+                "stand_power": room["stand_powers"].get(orig, ""),
+                "drawing": room["drawings"].get(orig, ""),
+                "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                "requiem_power": room["requiem_powers"].get(player, ""),
+                "duration": dd,
+            }))
+        except Exception:
+            pass
+    asyncio.create_task(timer_requiem_draw(code, dd))
+
+
+async def _start_requiem_reveal(code: str):
+    room = rooms.get(code)
+    if not room:
+        return
+    room["phase"] = "requiem_reveal"
+    order = room["all_players"][:]
+    random.shuffle(order)
+    room["requiem_reveal_order"] = order
+    room["requiem_reveal_index"] = 0
+    room["requiem_reveal_next_votes"] = set()
+    room["requiem_reveal_expected"] = set()
+    room["requiem_reveal_next_event"] = None
+    room["current_requiem_reveal_maker"] = None
+    await broadcast(code, {"type": "phase_change", "phase": "requiem_reveal"})
+    asyncio.create_task(_do_requiem_reveals(code))
+
+
+async def _do_requiem_reveals(code: str):
+    await asyncio.sleep(2)
+    room = rooms.get(code)
+    if not room:
+        return
+    order = room["requiem_reveal_order"]
+
+    for idx, player in enumerate(order):
+        room = rooms.get(code)
+        if not room or room["phase"] != "requiem_reveal":
+            return
+
+        room["requiem_reveal_next_votes"] = set()
+        room["requiem_reveal_expected"] = set(room["players"].keys())
+        event = asyncio.Event()
+        room["requiem_reveal_next_event"] = event
+        room["requiem_reveal_index"] = idx
+        room["current_requiem_reveal_maker"] = player
+
+        orig = room["requiem_assignments"][player]
+        await broadcast(code, {
+            "type": "requiem_reveal_stand",
+            "requiem_maker": player,
+            "original_maker": orig,
+            "stand_name": room["stand_names"].get(orig, "???"),
+            "stand_power": room["stand_powers"].get(orig, ""),
+            "original_drawing": room["drawings"].get(orig, ""),
+            "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+            "requiem_power": room["requiem_powers"].get(player, ""),
+            "requiem_drawing": room["requiem_drawings"].get(player, ""),
+            "index": idx,
+            "total": len(order),
+            "votes_needed": len(room["requiem_reveal_expected"]),
+        })
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout=300)
+        except asyncio.TimeoutError:
+            pass
+
+    room = rooms.get(code)
+    if not room:
+        return
+    room["phase"] = "requiem_vote"
+    stands = []
+    for p in order:
+        orig = room["requiem_assignments"][p]
+        stands.append({
+            "requiem_maker": p,
+            "original_maker": orig,
+            "stand_name": room["stand_names"].get(orig, "???"),
+            "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+            "requiem_power": room["requiem_powers"].get(p, ""),
+            "requiem_drawing": room["requiem_drawings"].get(p, ""),
+        })
+    await broadcast(code, {"type": "phase_change", "phase": "requiem_vote", "stands": stands})
+
+
 @app.get("/")
 def home(request: Request):
     return templates.TemplateResponse(request, "home.html")
@@ -223,6 +382,17 @@ async def create_room(request: Request):
         "draw_duration": dd if dd in valid_draw else 120,
         "phase_started_at": 0,
         "phase_duration": 0,
+        # requiem fields
+        "requiem_assignments": {},
+        "requiem_powers": {},
+        "requiem_drawings": {},
+        "requiem_votes": {},
+        "requiem_reveal_order": [],
+        "requiem_reveal_index": 0,
+        "requiem_reveal_expected": set(),
+        "requiem_reveal_next_votes": set(),
+        "requiem_reveal_next_event": None,
+        "current_requiem_reveal_maker": None,
     }
     return {"room_code": code}
 
@@ -341,12 +511,82 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                 for m in room["reveal_order"]
             ]
             await ws.send_text(json.dumps({"type": "phase_change", "phase": "vote", "stands": stands}))
+        elif phase == "requiem_powers":
+            orig = room["requiem_assignments"].get(username)
+            if orig:
+                await ws.send_text(json.dumps({
+                    "type": "phase_change",
+                    "phase": "requiem_powers",
+                    "original_maker": orig,
+                    "stand_name": room["stand_names"].get(orig, "???"),
+                    "stand_power": room["stand_powers"].get(orig, ""),
+                    "drawing": room["drawings"].get(orig, ""),
+                    "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                    "duration": remaining,
+                    "already_submitted": username in room["requiem_powers"],
+                }))
+        elif phase == "requiem_draw":
+            orig = room["requiem_assignments"].get(username)
+            if orig:
+                await ws.send_text(json.dumps({
+                    "type": "phase_change",
+                    "phase": "requiem_draw",
+                    "original_maker": orig,
+                    "stand_name": room["stand_names"].get(orig, "???"),
+                    "stand_power": room["stand_powers"].get(orig, ""),
+                    "drawing": room["drawings"].get(orig, ""),
+                    "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                    "requiem_power": room["requiem_powers"].get(username, ""),
+                    "duration": remaining,
+                    "already_submitted": username in room["requiem_drawings"],
+                }))
+        elif phase == "requiem_reveal":
+            await ws.send_text(json.dumps({"type": "phase_change", "phase": "requiem_reveal"}))
+            maker = room.get("current_requiem_reveal_maker")
+            if maker and maker in room["requiem_assignments"]:
+                idx = room.get("requiem_reveal_index", 0)
+                votes = len(room.get("requiem_reveal_next_votes", set()))
+                needed = len(room.get("requiem_reveal_expected", set()))
+                orig = room["requiem_assignments"][maker]
+                await ws.send_text(json.dumps({
+                    "type": "requiem_reveal_stand",
+                    "requiem_maker": maker,
+                    "original_maker": orig,
+                    "stand_name": room["stand_names"].get(orig, "???"),
+                    "stand_power": room["stand_powers"].get(orig, ""),
+                    "original_drawing": room["drawings"].get(orig, ""),
+                    "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                    "requiem_power": room["requiem_powers"].get(maker, ""),
+                    "requiem_drawing": room["requiem_drawings"].get(maker, ""),
+                    "index": idx,
+                    "total": len(room["requiem_reveal_order"]),
+                    "votes_needed": needed,
+                }))
+                if votes > 0:
+                    await ws.send_text(json.dumps({
+                        "type": "requiem_reveal_next_update",
+                        "votes": votes,
+                        "total": needed,
+                    }))
+        elif phase == "requiem_vote":
+            stands = []
+            for p in room["requiem_reveal_order"]:
+                orig = room["requiem_assignments"][p]
+                stands.append({
+                    "requiem_maker": p,
+                    "original_maker": orig,
+                    "stand_name": room["stand_names"].get(orig, "???"),
+                    "requiem_name": room["stand_names"].get(orig, "???") + " Requiem",
+                    "requiem_power": room["requiem_powers"].get(p, ""),
+                    "requiem_drawing": room["requiem_drawings"].get(p, ""),
+                })
+            await ws.send_text(json.dumps({"type": "phase_change", "phase": "requiem_vote", "stands": stands}))
         elif phase == "results":
             order = room["reveal_order"]
             vc = {m: 0 for m in room["assignments"]}
             for vm in room["votes"].values():
                 vc[vm] += 1
-            results = sorted([{
+            normal_results = sorted([{
                 "maker": m,
                 "target": room["assignments"][m],
                 "stand_name": room["stand_names"].get(m, "???"),
@@ -354,7 +594,25 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                 "drawing": room["drawings"].get(m, ""),
                 "votes": vc[m],
             } for m in order], key=lambda x: -x["votes"])
-            await ws.send_text(json.dumps({"type": "results", "results": results}))
+
+            vc_r = {p: 0 for p in room["all_players"]}
+            for vm in room["requiem_votes"].values():
+                vc_r[vm] += 1
+            requiem_results = sorted([{
+                "requiem_maker": p,
+                "original_maker": room["requiem_assignments"].get(p, ""),
+                "stand_name": room["stand_names"].get(room["requiem_assignments"].get(p, ""), "???"),
+                "requiem_name": room["stand_names"].get(room["requiem_assignments"].get(p, ""), "???") + " Requiem",
+                "requiem_power": room["requiem_powers"].get(p, ""),
+                "requiem_drawing": room["requiem_drawings"].get(p, ""),
+                "votes": vc_r[p],
+            } for p in room.get("requiem_reveal_order", [])], key=lambda x: -x["votes"])
+
+            await ws.send_text(json.dumps({
+                "type": "results",
+                "results": normal_results,
+                "requiem_results": requiem_results,
+            }))
 
         await broadcast(room_code, {
             "type": "player_update",
@@ -449,11 +707,57 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                         "total": len(room["all_players"]),
                     })
                     if len(room["votes"]) >= len(room["all_players"]):
-                        room["phase"] = "results"
+                        await _start_requiem_powers(room_code)
+
+            elif t == "submit_requiem_powers":
+                if room["phase"] != "requiem_powers" or username in room["requiem_powers"]:
+                    continue
+                power = (msg.get("stand_power") or "").strip()
+                room["requiem_powers"][username] = power
+                if len(room["requiem_powers"]) >= len(room["all_players"]):
+                    await _start_requiem_draw(room_code)
+
+            elif t == "submit_requiem_drawing":
+                if room["phase"] not in ("requiem_draw", "requiem_reveal") or username in room["requiem_drawings"]:
+                    continue
+                room["requiem_drawings"][username] = msg.get("drawing_data", "")
+                if room["phase"] == "requiem_draw" and len(room["requiem_drawings"]) >= len(room["all_players"]):
+                    await _start_requiem_reveal(room_code)
+
+            elif t == "requiem_reveal_next":
+                if room["phase"] != "requiem_reveal":
+                    continue
+                if username not in room.get("requiem_reveal_expected", set()):
+                    continue
+                room["requiem_reveal_next_votes"].add(username)
+                votes = len(room["requiem_reveal_next_votes"])
+                total = len(room["requiem_reveal_expected"])
+                await broadcast(room_code, {
+                    "type": "requiem_reveal_next_update",
+                    "votes": votes,
+                    "total": total,
+                })
+                if votes >= total:
+                    event = room.get("requiem_reveal_next_event")
+                    if event and not event.is_set():
+                        event.set()
+
+            elif t == "requiem_vote":
+                if room["phase"] != "requiem_vote" or username in room["requiem_votes"]:
+                    continue
+                target = msg.get("target")
+                if target and target in room["all_players"] and target != username:
+                    room["requiem_votes"][username] = target
+                    await broadcast(room_code, {
+                        "type": "requiem_vote_update",
+                        "vote_count": len(room["requiem_votes"]),
+                        "total": len(room["all_players"]),
+                    })
+                    if len(room["requiem_votes"]) >= len(room["all_players"]):
                         vc = {m: 0 for m in room["assignments"]}
                         for vm in room["votes"].values():
                             vc[vm] += 1
-                        results = sorted([{
+                        normal_results = sorted([{
                             "maker": m,
                             "target": room["assignments"][m],
                             "stand_name": room["stand_names"].get(m, "???"),
@@ -461,7 +765,26 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                             "drawing": room["drawings"].get(m, ""),
                             "votes": vc[m],
                         } for m in room["reveal_order"]], key=lambda x: -x["votes"])
-                        await broadcast(room_code, {"type": "results", "results": results})
+
+                        vc_r = {p: 0 for p in room["all_players"]}
+                        for vm in room["requiem_votes"].values():
+                            vc_r[vm] += 1
+                        requiem_results = sorted([{
+                            "requiem_maker": p,
+                            "original_maker": room["requiem_assignments"][p],
+                            "stand_name": room["stand_names"].get(room["requiem_assignments"][p], "???"),
+                            "requiem_name": room["stand_names"].get(room["requiem_assignments"][p], "???") + " Requiem",
+                            "requiem_power": room["requiem_powers"].get(p, ""),
+                            "requiem_drawing": room["requiem_drawings"].get(p, ""),
+                            "votes": vc_r[p],
+                        } for p in room["requiem_reveal_order"]], key=lambda x: -x["votes"])
+
+                        room["phase"] = "results"
+                        await broadcast(room_code, {
+                            "type": "results",
+                            "results": normal_results,
+                            "requiem_results": requiem_results,
+                        })
 
             elif t == "update_settings":
                 if username != room["host"] or room["phase"] != "lobby":
@@ -496,6 +819,16 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                 room["reveal_next_votes"] = set()
                 room["reveal_next_event"] = None
                 room["current_reveal_maker"] = None
+                room["requiem_assignments"] = {}
+                room["requiem_powers"] = {}
+                room["requiem_drawings"] = {}
+                room["requiem_votes"] = {}
+                room["requiem_reveal_order"] = []
+                room["requiem_reveal_index"] = 0
+                room["requiem_reveal_expected"] = set()
+                room["requiem_reveal_next_votes"] = set()
+                room["requiem_reveal_next_event"] = None
+                room["current_requiem_reveal_maker"] = None
                 await broadcast(room_code, {
                     "type": "game_reset",
                     "party_name": room["party_name"],
@@ -522,6 +855,15 @@ async def ws_endpoint(ws: WebSocket, room_code: str, username: str):
                     room["reveal_next_votes"].discard(username)
                     if room["reveal_next_votes"] >= exp and exp:
                         event = room.get("reveal_next_event")
+                        if event and not event.is_set():
+                            event.set()
+            elif room.get("phase") == "requiem_reveal":
+                exp = room.get("requiem_reveal_expected", set())
+                if username in exp:
+                    exp.discard(username)
+                    room["requiem_reveal_next_votes"].discard(username)
+                    if room["requiem_reveal_next_votes"] >= exp and exp:
+                        event = room.get("requiem_reveal_next_event")
                         if event and not event.is_set():
                             event.set()
         else:
