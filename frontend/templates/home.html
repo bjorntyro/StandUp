@@ -1,13 +1,136 @@
 {% extends "base.html" %}
 {% block content %}
-    <section class="hero">
-        <div class="hero-box">
-            <h1>Create your JoJo Stand</h1>
-            <p>Invent bizarre stands with your friends.</p>
-            <div class="buttons">
-                <button class="btn">Create Party</button>
-                <button class="btn secondary">Join Party</button>
+<div class="page-wrap">
+    <div class="hero">
+        <div class="hero-title">STAND UP!</div>
+        <div class="hero-subtitle">THE ULTIMATE STAND BATTLE</div>
+        <div class="btn-group">
+            <button class="btn btn-primary btn-lg" onclick="openModal('create')">CREATE PARTY</button>
+            <button class="btn btn-lg" onclick="openModal('join')">JOIN PARTY</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create Party Modal -->
+<div id="modal-create" class="modal-overlay hidden">
+    <div class="modal-box panel">
+        <div class="modal-title">CREATE PARTY</div>
+        <div class="field">
+            <label>Party Name</label>
+            <input id="create-party-name" class="input" type="text" placeholder="Golden Wind Party..." maxlength="20" autocomplete="off">
+        </div>
+        <div class="field">
+            <label>Your Stand User Name</label>
+            <input id="create-username" class="input" type="text" placeholder="Giorno Giovanna..." maxlength="14" autocomplete="off">
+        </div>
+        <div class="settings-divider">GAME SETTINGS</div>
+        <div class="fields-row">
+            <div class="field field-half">
+                <label>Name Phase</label>
+                <select id="create-name-duration" class="input">
+                    <option value="30" selected>30 sec</option>
+                    <option value="60">1 min</option>
+                    <option value="120">2 min</option>
+                    <option value="300">5 min</option>
+                </select>
+            </div>
+            <div class="field field-half">
+                <label>Draw Phase</label>
+                <select id="create-draw-duration" class="input">
+                    <option value="60">1 min</option>
+                    <option value="120" selected>2 min</option>
+                    <option value="300">5 min</option>
+                    <option value="600">10 min</option>
+                </select>
             </div>
         </div>
-    </section>
+        <div id="create-error" class="error-msg"></div>
+        <div class="btn-group" style="margin-top:24px;">
+            <button class="btn btn-primary" onclick="createParty()">CREATE</button>
+            <button class="btn" onclick="closeModal('create')">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- Join Party Modal -->
+<div id="modal-join" class="modal-overlay hidden">
+    <div class="modal-box panel">
+        <div class="modal-title">JOIN PARTY</div>
+        <div class="field">
+            <label>Room Code</label>
+            <input id="join-code" class="input big" type="text" placeholder="ABCD" maxlength="4" autocomplete="off" style="text-transform:uppercase;">
+        </div>
+        <div class="field">
+            <label>Your Stand User Name</label>
+            <input id="join-username" class="input" type="text" placeholder="Jotaro Kujo..." maxlength="14" autocomplete="off">
+        </div>
+        <div id="join-error" class="error-msg"></div>
+        <div class="btn-group" style="margin-top:24px;">
+            <button class="btn btn-primary" onclick="joinParty()">JOIN</button>
+            <button class="btn" onclick="closeModal('join')">CANCEL</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(id) {
+    document.getElementById("modal-" + id).classList.remove("hidden");
+}
+function closeModal(id) {
+    document.getElementById("modal-" + id).classList.add("hidden");
+    document.getElementById(id === "create" ? "create-error" : "join-error").textContent = "";
+}
+
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+        closeModal("create");
+        closeModal("join");
+    }
+});
+["modal-create", "modal-join"].forEach(id => {
+    document.getElementById(id).addEventListener("click", e => {
+        if (e.target === e.currentTarget) closeModal(id.replace("modal-", ""));
+    });
+});
+
+async function createParty() {
+    const partyName = document.getElementById("create-party-name").value.trim();
+    const username = document.getElementById("create-username").value.trim();
+    const err = document.getElementById("create-error");
+    err.textContent = "";
+    if (!partyName) { err.textContent = "Enter a party name!"; return; }
+    if (!username) { err.textContent = "Enter your name!"; return; }
+    const nameDuration = parseInt(document.getElementById("create-name-duration").value);
+    const drawDuration = parseInt(document.getElementById("create-draw-duration").value);
+    const res = await fetch("/api/create_room", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({party_name: partyName, username, name_duration: nameDuration, draw_duration: drawDuration}),
+    });
+    const data = await res.json();
+    if (data.error) { err.textContent = data.error; return; }
+    sessionStorage.setItem("username", username);
+    window.location.href = "/lobby/" + data.room_code;
+}
+
+async function joinParty() {
+    const code = document.getElementById("join-code").value.trim().toUpperCase();
+    const username = document.getElementById("join-username").value.trim();
+    const err = document.getElementById("join-error");
+    err.textContent = "";
+    if (code.length !== 4) { err.textContent = "Enter a valid 4-letter room code!"; return; }
+    if (!username) { err.textContent = "Enter your name!"; return; }
+    const res = await fetch("/api/check_room", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({room_code: code}),
+    });
+    const data = await res.json();
+    if (data.error) { err.textContent = data.error; return; }
+    sessionStorage.setItem("username", username);
+    window.location.href = "/lobby/" + code;
+}
+</script>
 {% endblock %}

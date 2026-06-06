@@ -1,1 +1,24 @@
+# IDE
 .idea
+.continue
+.claude
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+
+# Distribution / build
+dist/
+build/

@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>StandUp</title>
-        <link rel="stylesheet" href="/frontend/static/css/style.css">
-    </head>
-    <body>
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StandUp</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⭐</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Poppins:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/frontend/static/css/style.css">
+</head>
+<body>
+    <div class="menacing-container" id="menacingContainer"></div>
+    {% block content %}{% endblock %}
+    <script src="/frontend/static/js/main.js" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
 </html>
